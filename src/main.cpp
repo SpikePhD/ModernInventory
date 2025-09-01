@@ -1,5 +1,6 @@
 #include "PCH.h"
 #include "ModernInventory/ModernInventory.h"
+#include "ModernInventory/D3D11Hook.h"
 
 // -------------------- Input sink (detect 'I' key) --------------------
 class MI_InputSink final : public RE::BSTEventSink<RE::InputEvent*>
@@ -59,21 +60,27 @@ public:
             return RE::BSEventNotifyControl::kContinue;
         }
 
-        if (a_event->menuName == RE::InventoryMenu::MENU_NAME) {
-            if (a_event->opening) {
-                RE::DebugNotification("ModernInventory: Inventory opened");
-                if (auto* con = RE::ConsoleLog::GetSingleton()) {
-                    con->Print("ModernInventory: Inventory opened");
+            if (a_event->menuName == RE::InventoryMenu::MENU_NAME) {
+                if (a_event->opening) {
+                    RE::DebugNotification("ModernInventory: Inventory opened");
+                    if (auto* con = RE::ConsoleLog::GetSingleton()) {
+                        con->Print("ModernInventory: Inventory opened");
+                    }
+                    MI::SetInventoryOpen(true);
+                    if (auto* inv3d = RE::Inventory3DManager::GetSingleton()) {
+                        inv3d->Clear3D(); // hide vanilla 3D preview under our panel
+                    }
+                    // TODO(next): show ImGui right pane
+                } else {
+                    RE::DebugNotification("ModernInventory: Inventory closed");
+                    if (auto* con = RE::ConsoleLog::GetSingleton()) {
+                        con->Print("ModernInventory: Inventory closed");
+                    }
+                    MI::SetInventoryOpen(false);
+                    // no need to restore Inventory3D; game rebuilds on next open
+                    // TODO(next): hide ImGui right pane
                 }
-                // TODO(next): show ImGui right pane
-            } else {
-                RE::DebugNotification("ModernInventory: Inventory closed");
-                if (auto* con = RE::ConsoleLog::GetSingleton()) {
-                    con->Print("ModernInventory: Inventory closed");
-                }
-                // TODO(next): hide ImGui right pane
             }
-        }
 
         return RE::BSEventNotifyControl::kContinue;
     }
@@ -108,32 +115,23 @@ namespace
 }
 
 // -------------------- SKSE entry --------------------
-extern "C"
+extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse)
 {
-    __declspec(dllexport) bool SKSEAPI SKSEPlugin_Query(const SKSE::QueryInterface* skse,
-                                                        SKSE::PluginInfo* info)
-    {
-        info->infoVersion = SKSE::PluginInfo::kVersion;
-        info->name        = MI::kName;
-        info->version     = 1;
-        return !skse->IsEditor();
+    SKSE::Init(skse);
+
+    if (auto* msg = SKSE::GetMessagingInterface()) {
+        msg->RegisterListener(OnSKSEMessage);
     }
 
-    __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadInterface* skse)
-    {
-        SKSE::Init(skse);
+    // Early sinks (harmless to repeat on DataLoaded)
+    RegisterSinks();
 
-        if (auto* msg = SKSE::GetMessagingInterface()) {
-            msg->RegisterListener(OnSKSEMessage);
-        }
+    // Install D3D11 Present hook + Dear ImGui bootstrap
+    MI::InstallD3D11Hook();
 
-        // Early sinks (harmless to repeat on DataLoaded)
-        RegisterSinks();
-
-        RE::DebugNotification("ModernInventory loaded");
-        if (auto* con = RE::ConsoleLog::GetSingleton()) {
-            con->Print("ModernInventory %s loaded", MI::kVersion);
-        }
-        return true;
+    RE::DebugNotification("ModernInventory loaded");
+    if (auto* con = RE::ConsoleLog::GetSingleton()) {
+        con->Print("ModernInventory %s loaded", MI::kVersion);
     }
+    return true;
 }

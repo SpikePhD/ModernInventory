@@ -4,6 +4,8 @@
   "builtin-baseline": "b1b19307e2d2ec1eefbdb7ea069de7d4bcd31f01",
   "dependencies": [
     "commonlibsse-ng",
-    "spdlog"
+    "spdlog",
+    "minhook",
+    { "name": "imgui", "features": ["dx11-binding", "win32-binding"] }
   ]
 }
