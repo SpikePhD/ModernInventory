@@ -13,31 +13,67 @@
   },
   "configurePresets": [
     {
+      "name": "ninja-vcpkg",
+      "displayName": "Ninja + vcpkg (x64)",
+      "description": "Single-config with VS-integrated vcpkg; auto-installs manifest deps",
+      "generator": "Ninja",
+      "binaryDir": "out/build/${presetName}",
+      "cacheVariables": {
+        "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
+        "VCPKG_TARGET_TRIPLET": "x64-windows",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL",
+        "CMAKE_EXPORT_COMPILE_COMMANDS": true
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "configureOnOpen": true
+        }
+      }
+    },
+    {
       "name": "vs2022-vcpkg",
       "displayName": "VS2022 + vcpkg (x64)",
+      "description": "Multi-config VS generator with vcpkg toolchain",
       "generator": "Visual Studio 17 2022",
       "architecture": { "value": "x64" },
-      "binaryDir": "build",
+      "binaryDir": "out/build/${presetName}",
       "cacheVariables": {
         "CMAKE_TOOLCHAIN_FILE": "$env{VCPKG_ROOT}/scripts/buildsystems/vcpkg.cmake",
         "VCPKG_TARGET_TRIPLET": "x64-windows",
         "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true
+      },
+      "vendor": {
+        "microsoft.com/VisualStudioSettings/CMake/1.0": {
+          "configureOnOpen": true
+        }
       }
     }
   ],
   "buildPresets": [
     {
+      "name": "build-debug",
+      "displayName": "Build Debug (Ninja)",
+      "configurePreset": "ninja-vcpkg",
+      "configuration": "Debug"
+    },
+    {
       "name": "build-release",
-      "displayName": "Build Release",
-      "configurePreset": "vs2022-vcpkg",
+      "displayName": "Build Release (Ninja)",
+      "configurePreset": "ninja-vcpkg",
       "configuration": "Release"
     },
     {
-      "name": "build-debug",
-      "displayName": "Build Debug",
+      "name": "vs-build-debug",
+      "displayName": "Build Debug (VS)",
       "configurePreset": "vs2022-vcpkg",
       "configuration": "Debug"
+    },
+    {
+      "name": "vs-build-release",
+      "displayName": "Build Release (VS)",
+      "configurePreset": "vs2022-vcpkg",
+      "configuration": "Release"
     }
   ]
 }
