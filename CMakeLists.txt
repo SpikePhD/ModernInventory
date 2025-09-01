@@ -18,6 +18,12 @@ add_commonlibsse_plugin(${PROJECT_NAME}
 # Precompiled header (first include in every .cpp)
 target_precompile_headers(${PROJECT_NAME} PRIVATE PCH.h)
 
+# Include paths (root for PCH.h, and public headers)
+target_include_directories(${PROJECT_NAME} PRIVATE
+  ${CMAKE_CURRENT_SOURCE_DIR}
+  ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
 # Optional: copy the DLL to your MO2 mods folder automatically
 if(DEFINED ENV{SKYRIM_MODS_FOLDER} AND IS_DIRECTORY "$ENV{SKYRIM_MODS_FOLDER}")
   set(MODS_OUT "$ENV{SKYRIM_MODS_FOLDER}/${PROJECT_NAME}")
