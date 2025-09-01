@@ -23,7 +23,7 @@
         "VCPKG_TARGET_TRIPLET": "x64-windows-static-md",
         "CMAKE_C_COMPILER": "cl.exe",
         "CMAKE_CXX_COMPILER": "cl.exe",
-        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL",
+        "CMAKE_MSVC_RUNTIME_LIBRARY": "MultiThreadedDLL",
         "CMAKE_EXPORT_COMPILE_COMMANDS": true
       },
       "vendor": {

@@ -24,6 +24,12 @@ target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/include
 )
 
+# Match CommonLibSSE build settings (avoid Debug iterator/CRT mismatches)
+target_compile_definitions(${PROJECT_NAME} PRIVATE
+  _ITERATOR_DEBUG_LEVEL=0
+  _SECURE_SCL=0
+)
+
 # Optional: copy the DLL to your MO2 mods folder automatically
 if(DEFINED ENV{SKYRIM_MODS_FOLDER} AND IS_DIRECTORY "$ENV{SKYRIM_MODS_FOLDER}")
   set(MODS_OUT "$ENV{SKYRIM_MODS_FOLDER}/${PROJECT_NAME}")
