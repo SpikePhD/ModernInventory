@@ -1,0 +1,36 @@
+# Visual Studio
+.vs/
+*.VC.db
+*.VC.opendb
+*.vscode/
+*.user
+*.suo
+*.ncb
+*.sdf
+*.opensdf
+*.ipch
+
+# CMake / build outputs
+/build/
+/out/
+CMakeFiles/
+CMakeCache.txt
+cmake-build*/
+**/*.dir/
+Testing/
+install/
+_deps/
+
+# Binaries
+*.exe
+*.dll
+*.lib
+*.pdb
+*.ilk
+*.obj
+*.exp
+*.log
+
+# Generated
+compile_commands.json
+

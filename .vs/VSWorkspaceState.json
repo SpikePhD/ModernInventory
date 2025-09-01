@@ -1,11 +1,12 @@
 {
-  "OutputFoldersPerTargetSystem": {
-    "Local Machine": [
-      "build"
-    ]
-  },
   "ExpandedNodes": [
     ""
   ],
-  "PreviewInSolutionExplorer": false
+  "PreviewInSolutionExplorer": false,
+  "OutputFoldersPerTargetSystem": {
+    "Local Machine": [
+      "out\\build\\ninja-vcpkg",
+      "out\\build\\vs2022-vcpkg"
+    ]
+  }
 }
