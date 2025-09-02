@@ -16,6 +16,7 @@ add_commonlibsse_plugin(${PROJECT_NAME}
   SOURCES
     src/main.cpp
     src/Hooks/D3D11Hook.cpp
+    src/game/Preview3D.cpp
     src/Systems/PreviewRenderer.cpp
     src/Systems/Config.cpp
     src/Systems/Log.cpp
@@ -32,6 +33,7 @@ target_precompile_headers(${PROJECT_NAME} PRIVATE PCH.h)
 target_include_directories(${PROJECT_NAME} PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}
   ${CMAKE_CURRENT_SOURCE_DIR}/include
+  ${CMAKE_CURRENT_SOURCE_DIR}/src
 )
 
 # Match CommonLibSSE build settings (avoid Debug iterator/CRT mismatches)

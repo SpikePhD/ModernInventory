@@ -16,6 +16,8 @@
 
 #include <imgui.h>
 
+#include "game/Preview3D.h"
+
 // Support multiple include layouts used by different imgui packages
 #if __has_include(<imgui/backends/imgui_impl_win32.h>)
 #  include <imgui/backends/imgui_impl_win32.h>
@@ -119,6 +121,7 @@ namespace MI
             ImGui_ImplDX11_Init(g_Device, g_Context);
             g_Offscreen.Init(g_Device, g_Context);
             g_Preview.Init(g_Device, g_Context);
+            Preview3D::Get().Init(g_Device, g_Context);
 
             g_ImGuiInitialized = true;
             if (!g_ImGuiInitNotified) {
@@ -179,25 +182,21 @@ namespace MI
 
                     ImGui::Text("ModernInventory");
                     ImGui::Separator();
-                    ImGui::TextWrapped("Right-side preview area (offscreen RT).");
+                    ImGui::TextWrapped("Right-side preview area (Preview3D RT).");
 
-                    // Ensure and clear offscreen target that will host the character preview
-                    const UINT rtW = static_cast<UINT>((std::max)(1.0f, panelSize.x - 24.0f));
-                    const UINT rtH = static_cast<UINT>((std::max)(1.0f, panelSize.y - 64.0f));
-                    g_Offscreen.Ensure(rtW, rtH);
-                    // Acquire backbuffer for this frame and render to RT (temporary step)
-                    ID3D11Texture2D* backTex = nullptr;
-                    if (SUCCEEDED(swap->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backTex))) {
-                        g_Preview.RenderTo(g_Offscreen, backTex);
-                        backTex->Release();
+                    // Use Preview3D off-screen SRV inside this pane
+                    const ImVec2 avail = ImGui::GetContentRegionAvail();
+                    const UINT w = static_cast<UINT>((std::max)(1.0f, avail.x));
+                    const UINT h = static_cast<UINT>((std::max)(1.0f, avail.y));
+
+                    auto& preview = Preview3D::Get();
+                    preview.EnsureSize(w, h);
+                    preview.RenderTestPattern();
+
+                    if (auto* srv = preview.GetSRV()) {
+                        ImGui::Image(reinterpret_cast<ImTextureID>(srv), ImVec2(static_cast<float>(w), static_cast<float>(h)));
                     } else {
-                        g_Preview.RenderTo(g_Offscreen, nullptr);
-                    }
-
-                    // Display the RT as an image
-                    if (auto* srv = g_Offscreen.GetSRV()) {
-                        ImGui::Dummy(ImVec2(0, 8));
-                        ImGui::Image(reinterpret_cast<ImTextureID>(srv), ImVec2(static_cast<float>(rtW), static_cast<float>(rtH)));
+                        ImGui::TextUnformatted("No SRV yet");
                     }
                     
                     ImGui::EndChild();
