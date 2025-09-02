@@ -1,5 +1,38 @@
 #include "PCH.h"
 #include "game/Preview3D.h"
+
+// Choose one of these = 1. Leave the other = 0.
+// Default to UI3D scene manager path.
+#ifndef MI_USE_UI3D_SCENE_MANAGER
+#define MI_USE_UI3D_SCENE_MANAGER 1
+#endif
+#ifndef MI_USE_BSGRAPHICS_RENDERER
+#define MI_USE_BSGRAPHICS_RENDERER 0
+#endif
+
+#if MI_USE_UI3D_SCENE_MANAGER
+#  if __has_include(<RE/U/UI3DSceneManager.h>)
+#    include <RE/U/UI3DSceneManager.h>
+#    define MI_HAS_UI3D 1
+#  elif __has_include(<RE/UI3DSceneManager.h>)
+#    include <RE/UI3DSceneManager.h>
+#    define MI_HAS_UI3D 1
+#  else
+#    define MI_HAS_UI3D 0
+#  endif
+#endif
+
+#if MI_USE_BSGRAPHICS_RENDERER
+#  if __has_include(<RE/R/Renderer.h>)
+#    include <RE/R/Renderer.h>
+#    define MI_HAS_RENDERER 1
+#  elif __has_include(<RE/Renderer.h>)
+#    include <RE/Renderer.h>
+#    define MI_HAS_RENDERER 1
+#  else
+#    define MI_HAS_RENDERER 0
+#  endif
+#endif
 #include <cmath>
 
 using Microsoft::WRL::ComPtr;
@@ -197,18 +230,10 @@ void Preview3D::Render()
         return;
     }
 
-    // --- Minimal, engine-friendly "render" handoff ---
-    //
-    // We rely on the game's UI 3D rendering path to draw NiTrees.
-    // The simplest safe stand-in (for now) is to ensure transforms are current
-    // and let the engine's UI compositor draw as part of the normal frame.
-    //
-    // Because we already draw this texture *before* ImGui, the naive version
-    // keeps purple unless we explicitly render. For a first visible step,
-    // we "fake" a render by clearing to a different color so you can see we
-    // reached this path; next patch will hook the engine UI scene renderer
-    // (UI3DSceneManager) to actually draw `sceneRoot_` to our RTV.
-
+    // Try engine/UI path first; if unavailable, fall back to slate clear.
+    if (TryRenderEngineScene()) {
+        return;
+    }
     // Placeholder clear to dark slate (indicates scene path is running):
     ClearToColor(0.10f, 0.12f, 0.18f, 1.0f);
     UpdateCamera();
@@ -219,4 +244,97 @@ void Preview3D::Render()
     //  - Or setup a tiny offscreen pass using the engine's draw calls
     //
     // For stability, we keep the purple fallback when clone isn't ready.
+}
+
+bool Preview3D::TryRenderEngineScene()
+{
+    if (!device_ || !context_ || !rtv_ || !sceneRoot_ || !camera_) {
+        return false;
+    }
+
+    // Bind our RTV + viewport for offscreen pass
+    D3D11_VIEWPORT vp{};
+    vp.TopLeftX = 0.0f; vp.TopLeftY = 0.0f;
+    vp.Width    = static_cast<float>(width_);
+    vp.Height   = static_cast<float>(height_);
+    vp.MinDepth = 0.0f; vp.MaxDepth = 1.0f;
+    ID3D11RenderTargetView* rt = rtv_.Get();
+    context_->OMSetRenderTargets(1, &rt, nullptr);
+    context_->RSSetViewports(1, &vp);
+
+    // Clear to transparent (lets ENB/compositors behave)
+    const float preClear[4] = { 0.f, 0.f, 0.f, 0.f };
+    context_->ClearRenderTargetView(rtv_.Get(), preClear);
+
+    // Ensure transforms are current (skipped: Update requires NiUpdateData variant)
+    // UpdateCamera applies latest orbit state.
+    UpdateCamera();
+
+    // Attach camera temporarily to our scene root (if not already)
+    bool cameraAttached = false;
+    if (auto* root = sceneRoot_.get()) {
+        // If your SDK exposes a parent pointer, you can check it here.
+        // We just attach unconditionally for now.
+        root->AttachChild(camera_.get(), true);
+        cameraAttached = true;
+    }
+
+    bool rendered = false;
+
+#if MI_USE_UI3D_SCENE_MANAGER && MI_HAS_UI3D
+    // ---------- PATH A: UI3DSceneManager ----------
+    if (!rendered) {
+        if (auto* mgr = RE::UI3DSceneManager::GetSingleton()) {
+            auto tryCall = [&](auto* M) {
+                bool ok = false;
+                (void)M;
+                if constexpr (requires { M->Render(sceneRoot_.get(), camera_.get()); }) {
+                    M->Render(sceneRoot_.get(), camera_.get());
+                    ok = true;
+                } else if constexpr (requires { M->RenderNode(sceneRoot_.get(), camera_.get()); }) {
+                    M->RenderNode(sceneRoot_.get(), camera_.get());
+                    ok = true;
+                } else if constexpr (requires { M->DrawScene(sceneRoot_, camera_); }) {
+                    M->DrawScene(sceneRoot_, camera_);
+                    ok = true;
+                }
+                return ok;
+            };
+            rendered = tryCall(mgr);
+        }
+    }
+#endif
+
+#if MI_USE_BSGRAPHICS_RENDERER && MI_HAS_RENDERER
+    // ---------- PATH B: BSGraphics::Renderer ----------
+    if (!rendered) {
+        if (auto* r = RE::BSGraphics::Renderer::GetSingleton()) {
+            auto tryCall = [&](auto* R) {
+                bool ok = false;
+                (void)R;
+                if constexpr (requires { R->DrawNiScene(sceneRoot_.get(), camera_.get()); }) {
+                    R->DrawNiScene(sceneRoot_.get(), camera_.get());
+                    ok = true;
+                } else if constexpr (requires { R->DrawScene(camera_.get(), sceneRoot_.get()); }) {
+                    R->DrawScene(camera_.get(), sceneRoot_.get());
+                    ok = true;
+                } else if constexpr (requires { R->RenderNode(sceneRoot_->AsNode(), camera_.get()); }) {
+                    R->RenderNode(sceneRoot_->AsNode(), camera_.get());
+                    ok = true;
+                }
+                return ok;
+            };
+            rendered = tryCall(r);
+        }
+    }
+#endif
+
+    // Detach camera if we attached it
+    if (cameraAttached) {
+        if (auto* root = sceneRoot_.get()) {
+            root->DetachChild(camera_.get());
+        }
+    }
+
+    return rendered;
 }

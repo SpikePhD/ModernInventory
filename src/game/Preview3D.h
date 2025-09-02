@@ -43,6 +43,7 @@ private:
     void EnsureScene();     // create scene/camera once
     void ClearToColor(float r, float g, float b, float a = 1.0f);
     void UpdateCamera();          // NEW: position/orient camera from yaw/pitch/distance
+    bool TryRenderEngineScene();  // NEW: attempt engine UI path; returns true if rendered
 
 private:
     // D3D
