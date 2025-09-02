@@ -3,6 +3,7 @@
 #include "ModernInventory/Config.h"
 #include "ModernInventory/Log.h"
 #include "ModernInventory/D3D11Hook.h"
+#include "game/Preview3D.h"
 
 // -------------------- Input sink (detect 'I' key) --------------------
 class MI_InputSink final : public RE::BSTEventSink<RE::InputEvent*>
@@ -72,7 +73,9 @@ public:
                     if (auto* inv3d = RE::Inventory3DManager::GetSingleton()) {
                         inv3d->Clear3D(); // hide vanilla 3D preview under our panel
                     }
-                    // TODO(next): show ImGui right pane
+                    // Kick off our paperdoll build; if player 3D isn't ready yet
+                    // we'll briefly show purple until it becomes available.
+                    Preview3D::Get().BuildFromPlayer();
                 } else {
                     RE::DebugNotification("ModernInventory: Inventory closed");
                     if (auto* con = RE::ConsoleLog::GetSingleton()) {

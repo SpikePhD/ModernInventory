@@ -191,7 +191,7 @@ namespace MI
 
                     auto& preview = Preview3D::Get();
                     preview.EnsureSize(w, h);
-                    preview.RenderTestPattern();
+                    preview.Render();
 
                     if (auto* srv = preview.GetSRV()) {
                         ImGui::Image(reinterpret_cast<ImTextureID>(srv), ImVec2(static_cast<float>(w), static_cast<float>(h)));
