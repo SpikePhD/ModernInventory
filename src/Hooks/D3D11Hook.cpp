@@ -40,6 +40,8 @@
 #include "ModernInventory/OffscreenRT.h"
 #include "ModernInventory/PreviewRenderer.h"
 
+#include "ModernInventory/Config.h"
+#include "ModernInventory/Log.h"
 namespace MI
 {
     namespace
@@ -121,7 +123,7 @@ namespace MI
             g_ImGuiInitialized = true;
             if (!g_ImGuiInitNotified) {
                 g_ImGuiInitNotified = true;
-                RE::DebugNotification("MI: ImGui initialized");
+                MI::Toast("MI: ImGui initialized");
             }
         }
 
@@ -142,7 +144,7 @@ namespace MI
         {
             if (!g_FirstPresentNotified) {
                 g_FirstPresentNotified = true;
-                RE::DebugNotification("MI: Present hook called");
+                MI::Toast("MI: Present hook called");
             }
 
             EnsureImGuiInit(swap);
@@ -155,8 +157,8 @@ namespace MI
 
                 if (g_InventoryOpen) {
                     // Right-side panel only (leave SkyUI left side visible)
-                    const float ratio = 0.75f; // take 75% of screen width by default
-                    const float minWidth = 520.0f;
+                    const float ratio = MI::ConfigSys::Get().panelWidthRatio; // configurable
+                    const float minWidth = static_cast<float>(MI::ConfigSys::Get().panelMinWidth);
                     const float maxWidth = static_cast<float>(g_Width) - 40.0f; // keep a small left margin
                     const float target = (std::max)(minWidth, static_cast<float>(g_Width) * ratio);
                     const float panelWidth = (std::min)(target, maxWidth);
@@ -183,8 +185,14 @@ namespace MI
                     const UINT rtW = static_cast<UINT>((std::max)(1.0f, panelSize.x - 24.0f));
                     const UINT rtH = static_cast<UINT>((std::max)(1.0f, panelSize.y - 64.0f));
                     g_Offscreen.Ensure(rtW, rtH);
-                    // Render the player preview into the RT (placeholder clears for now)
-                    g_Preview.RenderTo(g_Offscreen);
+                    // Acquire backbuffer for this frame and render to RT (temporary step)
+                    ID3D11Texture2D* backTex = nullptr;
+                    if (SUCCEEDED(swap->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&backTex))) {
+                        g_Preview.RenderTo(g_Offscreen, backTex);
+                        backTex->Release();
+                    } else {
+                        g_Preview.RenderTo(g_Offscreen, nullptr);
+                    }
 
                     // Display the RT as an image
                     if (auto* srv = g_Offscreen.GetSRV()) {
@@ -235,7 +243,7 @@ namespace MI
                     if (MH_EnableHook(reinterpret_cast<LPVOID>(presentAddr)) == MH_OK) {
                         if (!g_HookEnabledNotified) {
                             g_HookEnabledNotified = true;
-                            RE::DebugNotification("MI: Present hook enabled (CreateDevice hook)");
+                            MI::Toast("MI: Present hook enabled (CreateDevice hook)");
                         }
                     }
                 }
@@ -259,7 +267,7 @@ namespace MI
                     if (addr && MH_CreateHook(addr, &CreateDeviceAndSwapChain_Hook,
                                               reinterpret_cast<LPVOID*>(&g_OrigCreateDevSwap)) == MH_OK) {
                         MH_EnableHook(addr);
-                        RE::DebugNotification("MI: Hooked D3D11CreateDeviceAndSwapChain");
+                        MI::Toast("MI: Hooked D3D11CreateDeviceAndSwapChain");
                         return;
                     }
                 }
@@ -301,7 +309,7 @@ namespace MI
                     if (MH_EnableHook(reinterpret_cast<LPVOID>(presentAddr)) == MH_OK) {
                         if (!g_HookEnabledNotified) {
                             g_HookEnabledNotified = true;
-                            RE::DebugNotification("MI: Present hook enabled (fallback)");
+                            MI::Toast("MI: Present hook enabled (fallback)");
                         }
                     }
                 }
@@ -333,4 +341,6 @@ namespace MI
         return g_InventoryOpen;
     }
 }
+
+
 

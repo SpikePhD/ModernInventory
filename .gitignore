@@ -30,7 +30,7 @@ _deps/
 *.obj
 *.exp
 *.log
+tmp_*
 
 # Generated
 compile_commands.json
-

@@ -1,5 +1,7 @@
-#include "PCH.h"
+﻿#include "PCH.h"
 #include "ModernInventory/ModernInventory.h"
+#include "ModernInventory/Config.h"
+#include "ModernInventory/Log.h"
 #include "ModernInventory/D3D11Hook.h"
 
 // -------------------- Input sink (detect 'I' key) --------------------
@@ -129,7 +131,10 @@ extern "C" __declspec(dllexport) bool SKSEAPI SKSEPlugin_Load(const SKSE::LoadIn
     // Install D3D11 Present hook + Dear ImGui bootstrap
     MI::InstallD3D11Hook();
 
-    RE::DebugNotification("ModernInventory loaded");
+        MI::ConfigSys::Load();
+        MI::Log::Init();
+
+        MI::Toast("ModernInventory loaded");
     if (auto* con = RE::ConsoleLog::GetSingleton()) {
         con->Print("ModernInventory %s loaded", MI::kVersion);
     }

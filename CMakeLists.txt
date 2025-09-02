@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.25)
+﻿cmake_minimum_required(VERSION 3.25)
 project(ModernInventory VERSION 0.1.0 LANGUAGES CXX)
 
 # Toolchain / language
@@ -17,6 +17,11 @@ add_commonlibsse_plugin(${PROJECT_NAME}
     src/main.cpp
     src/Hooks/D3D11Hook.cpp
     src/Systems/PreviewRenderer.cpp
+    src/Systems/Config.cpp
+    src/Systems/Log.cpp
+    src/Systems/Player3D.cpp
+    src/Systems/PreviewGraph.cpp
+    src/Systems/PreviewCamera.cpp
   
   )
 
@@ -44,6 +49,8 @@ target_link_libraries(${PROJECT_NAME}
     minhook::minhook
     d3d11
     dxgi
+    Shell32
+    spdlog::spdlog
 )
 
 # Optional: copy the DLL to your MO2 mods folder automatically
