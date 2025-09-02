@@ -1,5 +1,6 @@
 #include "PCH.h"
 #include "game/Preview3D.h"
+#include <cmath>
 
 using Microsoft::WRL::ComPtr;
 
@@ -139,6 +140,7 @@ void Preview3D::BuildFromPlayer()
     }
 
     cloneRoot_ = RE::NiPointer<RE::NiAVObject>{ clone };
+    needsCameraUpdate_ = true;
 }
 
 void Preview3D::ClearToColor(float r, float g, float b, float a)
@@ -154,6 +156,35 @@ void Preview3D::ClearToColor(float r, float g, float b, float a)
     context_->OMSetRenderTargets(1, rtvs, nullptr);
     const float col[4] = { r, g, b, a };
     context_->ClearRenderTargetView(rtv_.Get(), col);
+}
+
+// Simple yaw(Z) + pitch(X) orbit camera around origin; computes camera position only.
+static inline RE::NiPoint3 ComputeOrbitPos(float yaw, float pitch, float distance)
+{
+    const float cp = std::cos(pitch);
+    const float sp = std::sin(pitch);
+    const float sy = std::sin(yaw);
+    const float cy = std::cos(yaw);
+
+    // Forward vector given yaw/pitch (Y-forward convention)
+    const RE::NiPoint3 forward{ sy * cp, cy * cp, sp };
+    return RE::NiPoint3{ -forward.x * distance, -forward.y * distance, -forward.z * distance };
+}
+
+void Preview3D::UpdateCamera()
+{
+    if (!camera_ || !needsCameraUpdate_) {
+        return;
+    }
+
+    const RE::NiPoint3 pos = ComputeOrbitPos(yaw_, pitch_, distance_);
+    camera_->world.translate = pos;
+    // Keep identity rotation for now; the engine UI renderer can compute view from camera node
+    // or we will extend this in the next patch to build a full basis.
+    // camera_->world.rotate = RE::NiMatrix3();
+
+    camera_->UpdateWorldBound();
+    needsCameraUpdate_ = false;
 }
 
 void Preview3D::Render()
@@ -180,6 +211,7 @@ void Preview3D::Render()
 
     // Placeholder clear to dark slate (indicates scene path is running):
     ClearToColor(0.10f, 0.12f, 0.18f, 1.0f);
+    UpdateCamera();
 
     // TODO (next step):
     //  - Create/borrow a UI 3D scene and attach sceneRoot_

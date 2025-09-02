@@ -91,6 +91,34 @@ public:
     }
 };
 
+// -------------------- Equip/Unequip sink --------------------
+class MI_EquipSink final : public RE::BSTEventSink<RE::TESEquipEvent>
+{
+public:
+    static MI_EquipSink* GetSingleton()
+    {
+        static MI_EquipSink inst;
+        return std::addressof(inst);
+    }
+
+    RE::BSEventNotifyControl ProcessEvent(const RE::TESEquipEvent* a_evn,
+                                          RE::BSTEventSource<RE::TESEquipEvent>*) override
+    {
+        if (!a_evn) {
+            return RE::BSEventNotifyControl::kContinue;
+        }
+
+        auto* pc = RE::PlayerCharacter::GetSingleton();
+        if (!pc || a_evn->actor.get() != pc) {
+            return RE::BSEventNotifyControl::kContinue;
+        }
+
+        // Any equip or unequip -> rebuild the paper-doll now
+        Preview3D::Get().RebuildNow();
+        return RE::BSEventNotifyControl::kContinue;
+    }
+};
+
 // -------------------- Helpers --------------------
 namespace
 {
@@ -101,6 +129,9 @@ namespace
         }
         if (auto* ui = RE::UI::GetSingleton()) {
             ui->AddEventSink(MI_MenuSink::GetSingleton());
+        }
+        if (auto* ev = RE::ScriptEventSourceHolder::GetSingleton()) {
+            ev->AddEventSink(MI_EquipSink::GetSingleton());
         }
     }
 

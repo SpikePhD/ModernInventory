@@ -3,6 +3,7 @@
 
 #include <d3d11.h>
 #include <wrl/client.h>
+#include <algorithm>
 
 class Preview3D {
 public:
@@ -29,10 +30,19 @@ public:
     // Cleanup
     void Shutdown();
 
+    // NEW: call when inventory opens (or right before first frame)
+    void RebuildNow() { BuildFromPlayer(); }
+
+    // NEW: camera controls (can be bound to hotkeys later)
+    void SetYaw(float radians)   { yaw_ = radians; needsCameraUpdate_ = true; }
+    void SetPitch(float radians) { pitch_ = std::clamp(radians, -1.2f, 1.2f); needsCameraUpdate_ = true; }
+    void SetZoom(float dist)     { distance_ = std::clamp(dist, 60.0f, 220.0f); needsCameraUpdate_ = true; }
+
 private:
     void CreateTargets();
     void EnsureScene();     // create scene/camera once
     void ClearToColor(float r, float g, float b, float a = 1.0f);
+    void UpdateCamera();          // NEW: position/orient camera from yaw/pitch/distance
 
 private:
     // D3D
@@ -51,4 +61,10 @@ private:
     RE::NiPointer<RE::NiAVObject> cloneRoot_;   // deep-cloned player tree
 
     bool sceneReady_ = false;
+
+    // NEW: simple orbit camera state
+    float yaw_   = 0.0f;     // left/right rotate
+    float pitch_ = 0.1f;     // up/down tilt
+    float distance_ = 140.0f; // zoom distance from target
+    bool needsCameraUpdate_ = true;
 };
