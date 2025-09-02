@@ -1,27 +1,78 @@
-# Visual Studio
+##############################
+# OS junk
+##############################
+.DS_Store
+Thumbs.db
+desktop.ini
+
+##############################
+# Editor/IDE metadata
+##############################
+.vscode/
+.idea/
+*.code-workspace
+*.sublime-*
+*.swp
+*.swo
+.vim/
+
+##############################
+# Visual Studio files
+##############################
 .vs/
 *.VC.db
 *.VC.opendb
-*.vscode/
 *.user
 *.suo
 *.ncb
 *.sdf
 *.opensdf
 *.ipch
+*.tlog
+*.lastbuildstate
+*.rsuser
+*.vcxproj*
+*.sln
 
+##############################
 # CMake / build outputs
+##############################
 /build/
 /out/
-CMakeFiles/
-CMakeCache.txt
+build*/
+out*/
 cmake-build*/
+**/CMakeFiles/
 **/*.dir/
+CMakeCache.txt
+CMakeUserPresets.json
+cmake_install.cmake
+CTestTestfile.cmake
+install_manifest.txt
 Testing/
 install/
 _deps/
+Makefile
 
-# Binaries
+# Ninja generators
+.ninja_deps
+.ninja_log
+build.ninja
+rules.ninja
+
+##############################
+# vcpkg artifacts
+##############################
+vcpkg_installed/
+installed/
+packages/
+vcpkg_downloads/
+vcpkg_artifacts/
+*.nupkg
+
+##############################
+# Binaries and compiled objects
+##############################
 *.exe
 *.dll
 *.lib
@@ -29,8 +80,27 @@ _deps/
 *.ilk
 *.obj
 *.exp
-*.log
-tmp_*
+*.gch
+*.pch
+*.d
+*.map
 
-# Generated
+##############################
+# Logs, temps, archives
+##############################
+*.log
+logs/
+tmp_*
+*.tmp
+~$*
+*.zip
+*.7z
+*.tar
+*.gz
+*.bz2
+*.xz
+
+##############################
+# Generated helper files
+##############################
 compile_commands.json
